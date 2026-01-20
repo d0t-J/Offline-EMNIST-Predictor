@@ -2,14 +2,10 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-from PIL import Image
+from PIL import Image, ImageOps
+from scipy import ndimage
 
-from PyQt5.QtWidgets import (
-    QApplication,
-    QWidget,
-    QPushButton,
-    QVBoxLayout
-)
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
 from PyQt5.QtGui import QPainter, QPen, QPixmap, QImage
 from PyQt5.QtCore import Qt, QPoint
 
@@ -84,12 +80,93 @@ class MainWindow(QWidget):
         self.setLayout(layout)
 
     def inspect_canvas(self):
-        img = self.canvas.capture_image()
+        raw = self.canvas.capture_image()
 
-        plt.imshow(img)
-        plt.title("Raw Canvas Capture")
+        pre = CanvasPreprocessor()
+        processed = pre.preprocess(raw)
+
+        plt.figure(figsize=(6, 3))
+
+        plt.subplot(1, 2, 1)
+        plt.imshow(raw)
+        plt.title("Raw Canvas")
         plt.axis("off")
+
+        plt.subplot(1, 2, 2)
+        plt.imshow(processed, cmap="gray")
+        plt.title("28 x 28 EMNIST-version")
+        plt.axis("off")
+
+        plt.tight_layout()
         plt.show()
+
+
+class CanvasPreprocessor:
+    def __init__(self, threshold=20):
+        self.threshold = threshold
+
+    def preprocess(self, img: Image.Image) -> Image.Image:
+        """
+        Convert raw canvas image to EMNIST-style 28x28 grayscale image.
+        """
+        # 1. Grayscale
+        img = img.convert("L")
+
+        # 2. Invert (black bg → white bg)
+        img = ImageOps.invert(img)
+
+        # 3. Convert to numpy
+        img_np = np.array(img)
+
+        # 4. Threshold
+        img_np[img_np < self.threshold] = 0
+
+        # 5. Bounding box
+        coords = np.column_stack(np.where(img_np > 0))
+        if coords.size == 0:
+            return Image.fromarray(np.zeros((28, 28), dtype=np.uint8))
+
+        y0, x0 = coords.min(axis=0)
+        y1, x1 = coords.max(axis=0) + 1
+
+        img_np = img_np[y0:y1, x0:x1]
+
+        img_pil = Image.fromarray(img_np)
+        h, w = img_np.shape
+
+        if h > w:
+            new_h = 20
+            new_w = int(round(w * (20 / h)))
+        else:
+            new_w = 20
+            new_h = int(round(h * (20 / w)))
+
+        img_pil = img_pil.resize((new_w, new_h), Image.BILINEAR)
+        img_np = np.array(img_pil)
+
+        # ! Apply padding here
+        pad_h = 28 - new_h
+        pad_w = 28 - new_w
+
+        pad_top = pad_h // 2
+        pad_bottom = pad_h - pad_top
+        pad_left = pad_w // 2
+        pad_right = pad_w - pad_left
+
+        img_np = np.pad(
+            img_np, ((pad_top, pad_bottom), (pad_left, pad_right)), mode="constant"
+        )
+
+        cy, cx = ndimage.center_of_mass(img_np)
+        if np.isnan(cx) or np.isnan(cy):
+            return Image.fromarray(img_np)
+
+        shift_y = int(round(14 - cy))
+        shift_x = int(round(14 - cx))
+
+        img_np = ndimage.shift(img_np, shift=(shift_y, shift_x), mode="constant")
+
+        return Image.fromarray(img_np.astype(np.uint8))
 
 
 if __name__ == "__main__":
