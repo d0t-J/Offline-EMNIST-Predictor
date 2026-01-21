@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 from emnist_cnn import EMNIST_CNN
@@ -34,6 +35,8 @@ def full_train():
 
     model = EMNIST_CNN()
     criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
     for batch_idx, (x, y) in enumerate(train_loader):
         optimizer.zero_grad()
         logits = model(x)
