@@ -1,6 +1,10 @@
+import torch.nn as nn
+
+from emnist_cnn import EMNIST_CNN
+from preprocess_emnist import EMNIST_Preprocessor
+
 from torchvision import datasets
 from torch.utils.data import DataLoader, random_split
-from preprocess_emnist import EMNISTPreprocessor
 
 
 def full_train():
@@ -9,7 +13,7 @@ def full_train():
         split="byclass",
         train=True,
         download=False,
-        transform=EMNISTPreprocessor(),
+        transform=EMNIST_Preprocessor(),
     )
 
     train_size = int(0.9 * len(full_train_dataset))
@@ -26,6 +30,11 @@ def full_train():
         val_dataset, batch_size=64, shuffle=False, num_workers=2, pin_memory=True
     )
 
-    total_classes = full_train_dataset.classes
+    total_classes = len(full_train_dataset.classes)
 
-
+    model = EMNIST_CNN()
+    criterion = nn.CrossEntropyLoss()
+    for batch_idx, (x, y) in enumerate(train_loader):
+        optimizer.zero_grad()
+        logits = model(x)
+        loss = criterion(logits, y)
