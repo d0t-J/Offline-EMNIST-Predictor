@@ -27,4 +27,3 @@ for idx, ax in enumerate(axes.flat):
     ax.axis("off")
 
 plt.show()
-
