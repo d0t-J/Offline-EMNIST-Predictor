@@ -7,7 +7,7 @@ from PIL import Image, ImageOps
 
 # ! In order to correct the orientation, we Flip the images Horizontally
 # ! Then we rotate the images 90 degrees anti-clockwise
-class EMNISTPreprocessor:
+class EMNIST_Preprocessor:
     def __init__(self):
         self.transform = transforms.Compose(
             [
@@ -39,7 +39,7 @@ print("imports successful and class created")
 def show_side_by_side(n=10):
     # raw transform (no orientation fix) for comparison
     raw_transform = transforms.ToTensor()
-    fixed = EMNISTPreprocessor()
+    fixed = EMNIST_Preprocessor()
 
     raw_dataset = datasets.EMNIST(
         root="../EMNIST_exploration/data",
