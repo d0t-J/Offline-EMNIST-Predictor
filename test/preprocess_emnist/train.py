@@ -1,5 +1,9 @@
 import torch
 import torch.nn as nn
+import warnings
+
+warnings.filterwarnings("ignore")
+
 
 from emnist_cnn import EMNIST_CNN
 from preprocess_emnist import EMNIST_Preprocessor
@@ -25,10 +29,10 @@ def full_train():
     )
 
     train_loader = DataLoader(
-        train_dataset, batch_size=64, shuffle=True, num_workers=2, pin_memory=True
+        train_dataset, batch_size=64, shuffle=True, num_workers=2, pin_memory=False
     )
     val_loader = DataLoader(
-        val_dataset, batch_size=64, shuffle=False, num_workers=2, pin_memory=True
+        val_dataset, batch_size=64, shuffle=False, num_workers=2, pin_memory=False
     )
 
     total_classes = len(full_train_dataset.classes)
@@ -52,8 +56,8 @@ def full_train():
 
             running_loss += loss.item()
 
-            if (batch_idx + 1) % 100 == 0:
-                print(f"Batch: {batch_idx}, Loss: {loss.item()}")
+            if (batch_idx + 1) % 500 == 0:
+                print(f"Batch: {batch_idx + 1}, Loss: {loss.item()}")
                 running_loss = 0.0
 
     model.eval()
