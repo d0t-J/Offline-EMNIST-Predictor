@@ -50,7 +50,7 @@ def full_train():
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item
+            running_loss += loss.item()
 
             if (batch_idx + 1) % 100 == 0:
                 print(f"Batch: {batch_idx}, Loss: {loss.item()}")
