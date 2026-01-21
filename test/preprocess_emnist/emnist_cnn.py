@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-from preprocess_emnist import EMNIST_Preprocessor
-
 
 class EMNIST_CNN(nn.Module):
     def __init__(self):
