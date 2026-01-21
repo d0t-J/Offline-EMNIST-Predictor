@@ -7,7 +7,7 @@ from PIL import Image
 from torchvision import transforms
 
 from emnist.model import EMNIST_CNN
-from emnist.preprocess import EMNIST_Preprocessor
+from emnist.preprocess import EMNIST_Normalizer
 
 
 class EMNIST_Inference:
@@ -20,10 +20,10 @@ class EMNIST_Inference:
 
         with open(vocab_path, "r") as f:
             self.class_vocab = json.load(f)
-        self.preprocessor = EMNIST_Preprocessor()
+        self.normalizer = EMNIST_Normalizer()
 
     def predict(self, pil_img: Image.Image):
-        x = self.preprocessor(pil_img).unsqueeze(0).to(self.device)
+        x = self.normalizer(pil_img).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
             logits = self.model(x)
