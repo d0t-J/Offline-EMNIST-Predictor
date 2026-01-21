@@ -18,7 +18,7 @@ def full_train():
     )
 
     train_size = int(0.9 * len(full_train_dataset))
-    val_size = int(0.1 * len(full_train_dataset))
+    val_size = len(full_train_dataset) - train_size
 
     train_dataset, val_dataset = random_split(
         full_train_dataset, [train_size, val_size]
@@ -37,12 +37,50 @@ def full_train():
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    for batch_idx, (x, y) in enumerate(train_loader):
-        optimizer.zero_grad()
-        logits = model(x)
-        loss = criterion(logits, y)
-        loss.backward()
-        optimizer.step()
-        print(f"Batch: {batch_idx}, Loss: {loss.item()}")
-        # Remove this for real training
-        break
+    num_epochs = 5
+    for epoch in range(1, num_epochs + 1):
+        print(f"Epoch: {epoch}/{num_epochs}")
+        model.train()
+        running_loss = 0.0
+
+        for batch_idx, (x, y) in enumerate(train_loader):
+            optimizer.zero_grad()
+            logits = model(x)
+            loss = criterion(logits, y)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item
+
+            if (batch_idx + 1) % 100 == 0:
+                print(f"Batch: {batch_idx}, Loss: {loss.item()}")
+                running_loss = 0.0
+
+    model.eval()
+    val_loss = 0.0
+    correct = 0
+    total = 0
+
+    with torch.no_grad():
+        for x, y in val_loader:
+            logits = model(x)
+            loss = criterion(logits, y)
+            val_loss += loss.item() * x.size(0)
+
+            pred = logits.argmax(dim=1)
+            correct += (pred == y).sum().item()
+            total += y.size(0)
+
+    val_loss /= total
+    val_acc = correct / total
+    print(f"Validation Loss: {val_loss:.4f}, Accuracy: {val_acc:.4f}")
+
+    torch.save(model.state_dict(), "emnist_cnn.pth")
+
+
+def main():
+    full_train()
+
+
+if __name__ == "__main__":
+    main()
