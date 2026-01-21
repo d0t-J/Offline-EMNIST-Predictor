@@ -41,3 +41,8 @@ def full_train():
         optimizer.zero_grad()
         logits = model(x)
         loss = criterion(logits, y)
+        loss.backward()
+        optimizer.step()
+        print(f"Batch: {batch_idx}, Loss: {loss.item()}")
+        # Remove this for real training
+        break
