@@ -1,6 +1,4 @@
-test/EMNIST_exploration/data/
+data/
 temp.*
-
-*.pth
 
 __pycache__/
