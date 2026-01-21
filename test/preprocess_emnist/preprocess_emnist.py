@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 
-from torch.utils.data import random_split, DataLoader
 from torchvision import datasets, transforms
 from PIL import Image, ImageOps
 
@@ -21,7 +20,7 @@ class EMNIST_Preprocessor:
     def fix_orientation_pil(pil_img: Image.Image) -> Image.Image:
         # 1) Mirror horizontally (equivalent to RandomHorizontalFlip(p=1.0))
         flipped = ImageOps.mirror(pil_img)
-        # 2) Rotate 90 degrees anti-clockwise (PIL rotate is counter-clockwise)
+        # 2) Rotate 90 degrees anti-clockwise (PIL img rotate is counter-clockwise)
         rotated = flipped.rotate(90, expand=True)
         # If rotate changed size, optionally resize back to 28x28:
         if rotated.size != (28, 28):
@@ -32,7 +31,7 @@ class EMNIST_Preprocessor:
         return self.transform(pil_img)
 
 
-print("imports successful and class created")
+# print("imports successful and class created")
 
 
 # ! For demonstration purposes

@@ -1,7 +1,5 @@
-import torch
 from torchvision import datasets, transforms
 
-import numpy as np
 import matplotlib.pyplot as plt
 
 transform = transforms.ToTensor()

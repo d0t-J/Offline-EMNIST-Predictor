@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-from torchvision import datasets
-from torch.utils.data import DataLoader, random_split
 from preprocess_emnist import EMNIST_Preprocessor
 
 
@@ -25,22 +23,22 @@ class EMNIST_CNN(nn.Module):
         self.fc2 = nn.Linear(128, 62)
 
     def forward(self, x):
-        print(f"Input: {x.shape}")
+        # print(f"Input: {x.shape}")
 
         x = self.conv1(x)
-        print(f"Shape after conv1: {x.shape}")
+        # print(f"Shape after conv1: {x.shape}")
 
         x = self.conv2(x)
-        print(f"Shape after conv2: {x.shape}")
+        # print(f"Shape after conv2: {x.shape}")
 
         x = x.view(x.size(0), -1)
-        print(f"After flattening: {x.shape}")
+        # print(f"After flattening: {x.shape}")
 
         x = torch.relu(self.fc1(x))
-        print(f"After FC1: {x.shape}")
+        # print(f"After FC1: {x.shape}")
 
         x = self.fc2(x)
-        print(f"After FC2: {x.shape}")
+        # print(f"After FC2: {x.shape}")
 
         return x
 
