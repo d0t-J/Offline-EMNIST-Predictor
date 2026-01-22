@@ -9,6 +9,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
 from PyQt5.QtGui import QPainter, QPen, QPixmap, QImage
 from PyQt5.QtCore import Qt, QPoint
 
+from emnist_inference import EMNIST_Inference
+
 
 class Canvas(QWidget):
     def __init__(self):
@@ -65,6 +67,9 @@ class MainWindow(QWidget):
         self.setWindowTitle("Handwriting Canvas")
 
         self.canvas = Canvas()
+        self.infer = EMNIST_Inference(
+            model_path="emnist_cnn.pth", vocab_path="class_vocab.json", device="cpu"
+        )
 
         self.btn_inspect = QPushButton("Inspect")
         self.btn_clear = QPushButton("Clear")
@@ -85,16 +90,30 @@ class MainWindow(QWidget):
         pre = CanvasPreprocessor()
         processed = pre.preprocess(raw)
 
-        plt.figure(figsize=(6, 3))
+        predicted_char, confidence, _ = self.infer.predict(processed)
 
-        plt.subplot(1, 2, 1)
+        processed.save("./test_canvas.png")
+        print("Saved test_canvas.png")
+
+        plt.figure(figsize=(6, 3))
+        plt.subplot(1, 3, 1)
         plt.imshow(raw)
         plt.title("Raw Canvas")
         plt.axis("off")
 
-        plt.subplot(1, 2, 2)
+        plt.subplot(1, 3, 2)
         plt.imshow(processed, cmap="gray")
-        plt.title("28 x 28 EMNIST-version")
+        plt.title("Processed 28x28")
+        plt.axis("off")
+
+        plt.subplot(1, 3, 3)
+        plt.text(
+            0.5,
+            0.5,
+            f"Pred: {predicted_char}\nConf: {confidence:.2f}",
+            fontsize=20,
+            ha="center",
+        )
         plt.axis("off")
 
         plt.tight_layout()
@@ -108,12 +127,14 @@ class CanvasPreprocessor:
     def preprocess(self, img: Image.Image) -> Image.Image:
         """
         Convert raw canvas image to EMNIST-style 28x28 grayscale image.
+        EMNIST training data: white strokes on black background
+        Canvas: white strokes on black background (same!) → NO inversion needed
         """
         # 1. Grayscale
         img = img.convert("L")
 
-        # 2. Invert (black bg → white bg)
-        img = ImageOps.invert(img)
+        # 2. NO inversion - canvas already matches EMNIST format (white on black)
+        # img = ImageOps.invert(img)  # REMOVED
 
         # 3. Convert to numpy
         img_np = np.array(img)
