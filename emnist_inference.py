@@ -6,8 +6,8 @@ import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
 
-from emnist.model import EMNIST_CNN
-from emnist.preprocess import EMNIST_Normalizer
+from emnist_model import EMNIST_CNN
+from emnist_preprocess import EMNIST_Normalizer
 
 
 class EMNIST_Inference:

@@ -2,7 +2,7 @@ from torchvision import datasets, transforms
 import json
 
 dataset = datasets.EMNIST(
-    root="../EMNIST_exploration/data",
+    root="./data",
     split="byclass",
     train=True,
     download=False,

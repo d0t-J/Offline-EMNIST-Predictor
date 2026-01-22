@@ -5,8 +5,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-from emnist.model import EMNIST_CNN
-from emnist.preprocess import EMNIST_Preprocessor
+from emnist_model import EMNIST_CNN
+from emnist_preprocess import EMNIST_Preprocessor
 
 from torchvision import datasets
 from torch.utils.data import DataLoader, random_split
@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader, random_split
 
 def full_train():
     full_train_dataset = datasets.EMNIST(
-        root="../EMNIST_exploration/data",
+        root="./data",
         split="byclass",
         train=True,
         download=False,
