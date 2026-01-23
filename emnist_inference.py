@@ -33,4 +33,12 @@ class EMNIST_Inference:
         char = self.class_vocab[idx]
         confidence = float(probs[idx])
 
+        if char.isupper():
+            lower_char = char.lower()
+            if lower_char in self.class_vocab:
+                lower_idx = self.class_vocab.index(lower_char)
+                if probs[lower_idx] > confidence * 0.85:
+                    char = lower_char
+                    confidence = float(probs[lower_idx])
+
         return char, confidence, probs.cpu().numpy()

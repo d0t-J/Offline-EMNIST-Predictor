@@ -4,8 +4,17 @@ import matplotlib.pyplot as plt
 
 from PIL import Image, ImageOps
 from scipy import ndimage
+from scipy.ndimage import binary_dilation
 
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QPushButton,
+    QVBoxLayout,
+    QLabel,
+    QHBoxLayout,
+    QMessageBox,
+)
 from PyQt5.QtGui import QPainter, QPen, QPixmap, QImage
 from PyQt5.QtCore import Qt, QPoint
 
@@ -34,7 +43,7 @@ class Canvas(QWidget):
     def mouseMoveEvent(self, event):
         if event.buttons() & Qt.LeftButton:
             painter = QPainter(self.pixmap)
-            pen = QPen(Qt.white, 15, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+            pen = QPen(Qt.white, 8, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
             painter.setPen(pen)
             painter.drawLine(self.last_point, event.pos())
             self.last_point = event.pos()
@@ -67,20 +76,33 @@ class MainWindow(QWidget):
         self.setWindowTitle("Handwriting Canvas")
 
         self.canvas = Canvas()
-        self.infer = EMNIST_Inference(
-            model_path="emnist_cnn.pth", vocab_path="class_vocab.json", device="cpu"
-        )
+        try:
+            self.infer = EMNIST_Inference(
+                model_path="emnist_cnn.pth", vocab_path="class_vocab.json", device="cpu"
+            )
+        except Exception as e:
+            QMessageBox.warning(self, "Model load failed", f"Could not load model: {e}")
 
         self.btn_inspect = QPushButton("Inspect")
+        self.btn_predict = QPushButton("Predict")
         self.btn_clear = QPushButton("Clear")
 
+        self.result_label = QLabel("Prediction")
+        self.result_label.setStyleSheet("font-size: 18px;")
+
         self.btn_inspect.clicked.connect(self.inspect_canvas)
+        self.btn_predict.clicked.connect(self.predict_canvas)
         self.btn_clear.clicked.connect(self.canvas.clear)
+
+        button_row = QHBoxLayout()
+        button_row.addWidget(self.btn_inspect)
+        button_row.addWidget(self.btn_predict)
+        button_row.addWidget(self.btn_clear)
 
         layout = QVBoxLayout()
         layout.addWidget(self.canvas)
-        layout.addWidget(self.btn_inspect)
-        layout.addWidget(self.btn_clear)
+        layout.addLayout(button_row)
+        layout.addWidget(self.result_label)
 
         self.setLayout(layout)
 
@@ -89,8 +111,6 @@ class MainWindow(QWidget):
 
         pre = CanvasPreprocessor()
         processed = pre.preprocess(raw)
-
-        predicted_char, confidence, _ = self.infer.predict(processed)
 
         processed.save("./test_canvas.png")
         print("Saved test_canvas.png")
@@ -106,18 +126,45 @@ class MainWindow(QWidget):
         plt.title("Processed 28x28")
         plt.axis("off")
 
-        plt.subplot(1, 3, 3)
-        plt.text(
-            0.5,
-            0.5,
-            f"Pred: {predicted_char}\nConf: {confidence:.2f}",
-            fontsize=20,
-            ha="center",
-        )
-        plt.axis("off")
-
         plt.tight_layout()
         plt.show()
+
+    def _is_blank(self, pil_img: Image.Image, threshold=5):
+        arr = np.array(pil_img)
+        return arr.max() <= threshold
+
+    def predict_canvas(self):
+        if self.infer is None:
+            QMessageBox.warning(self, "No Model", "No model loaded for inference")
+            return
+
+        raw = self.canvas.capture_image()
+        pre = CanvasPreprocessor()
+        processed = pre.preprocess(raw)
+
+        if self._is_blank(processed, threshold=5):
+            self.result_label.setText(
+                "Prediction: (canvas is blank).Draw Something first."
+            )
+            return
+
+        try:
+            char, confidence, probs = self.infer.predict(processed)
+        except Exception as e:
+            QMessageBox.critical(self, "Inference Error", f"Inference failed: {e}")
+            return
+
+        topk_idx = np.argsort(probs)[::-1][:3]
+        topk = [
+            (self.infer.class_vocab[int(i)], float(probs[int(i)])) for i in topk_idx
+        ]
+
+        display_text = f"Pred: {char} ({confidence:.2f}). Top3: " + ", ".join(
+            [f"{c}:{p:.2f}" for c, p in topk]
+        )
+        self.result_label.setText(display_text)
+
+        processed.save("./latest_prediction.png")
 
 
 class CanvasPreprocessor:
@@ -141,6 +188,10 @@ class CanvasPreprocessor:
 
         # 4. Threshold
         img_np[img_np < self.threshold] = 0
+        binary = img_np > 0
+        binary = binary_dilation(binary, iterations=2)
+
+        img_np = (binary * 255).astype(np.uint8)
 
         # 5. Bounding box
         coords = np.column_stack(np.where(img_np > 0))
